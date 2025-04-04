@@ -3,31 +3,28 @@ const multer = require('multer');
 const ApplicationByDate = require('../models/ApplicationByDate');
 const router = express.Router();
 
-// Configure multer for file storage
+// Multer storage config
 const storage = multer.diskStorage({
   destination: 'uploads/',
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
 const upload = multer({ storage });
 
-// Route to submit a new application with an image upload
+// POST new application
 router.post('/', upload.single('image'), async (req, res) => {
   const { name, mobile } = req.body;
   const imageUrl = req.file ? req.file.path : null;
   const today = new Date().toISOString().split("T")[0];
 
   try {
-    // Check if date document already exists
     let record = await ApplicationByDate.findOne({ date: today });
 
     if (!record) {
-      // Create new date document with first application
       record = new ApplicationByDate({
         date: today,
         applications: [{ name, mobile, imageUrl, status: 'pending' }]
       });
     } else {
-      // Append new application to existing date
       record.applications.push({ name, mobile, imageUrl, status: 'pending' });
     }
 
@@ -38,39 +35,45 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 });
 
-// Route to retrieve all applications
-router.get('/', async (req, res) => {
-  const { date } = req.query;
-  if (!date) return res.status(400).json({ error: 'Date is required' });
+// GET applications by date
+router.get('/range', async (req, res) => {
+  const { start, end } = req.query;
+  if (!start || !end) return res.status(400).json({ error: 'Start and end dates are required' });
 
   try {
-    const record = await ApplicationByDate.findOne({ date });
-    if (!record) return res.json({ applications: [] });
+    const records = await ApplicationByDate.find({
+      date: { $gte: start, $lte: end }
+    });
 
-    res.json({ applications: record.applications });
+    // Flatten all applications from different dates
+    const applications = records.flatMap(record => record.applications);
+
+    res.json({ applications });
   } catch (err) {
-    console.error('Error fetching applications by date:', err);
+    console.error('Range fetch error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-
-// Route to update the status of an application by ID
-router.put('/:id', async (req, res) => {
+// PUT update status of one application
+router.put('/:appId', async (req, res) => {
+  const { appId } = req.params;
   const { status } = req.body;
 
   try {
-    const updatedApplicationByDate = await ApplicationByDate.findByIdAndUpdate(
-      req.params.id,
-      { status },
+    const doc = await ApplicationByDate.findOneAndUpdate(
+      { "applications._id": appId },
+      { $set: { "applications.$.status": status } },
       { new: true }
     );
-    if (!updatedApplicationByDate) {
-      return res.status(404).json({ error: 'Application not found' });
-    }
-    res.json(updatedApplicationByDate);
+
+    if (!doc) return res.status(404).json({ error: 'Application not found' });
+
+    const updatedApp = doc.applications.find(app => app._id.toString() === appId);
+    res.json(updatedApp);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Update error:', err);
+    res.status(500).json({ error: 'Failed to update application status' });
   }
 });
 
