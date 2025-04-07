@@ -3,14 +3,14 @@ const multer = require('multer');
 const ApplicationByDate = require('../models/ApplicationByDate');
 const router = express.Router();
 
-// Multer storage config
+// Multer config for image upload
 const storage = multer.diskStorage({
   destination: 'uploads/',
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
 const upload = multer({ storage });
 
-// POST new application
+// POST - submit application
 router.post('/', upload.single('image'), async (req, res) => {
   const { name, mobile } = req.body;
   const imageUrl = req.file ? req.file.path : null;
@@ -22,40 +22,43 @@ router.post('/', upload.single('image'), async (req, res) => {
     if (!record) {
       record = new ApplicationByDate({
         date: today,
-        applications: [{ name, mobile, imageUrl, status: 'pending' }]
+        applications: [{ name, mobile, imageUrl }]
       });
     } else {
-      record.applications.push({ name, mobile, imageUrl, status: 'pending' });
+      record.applications.push({ name, mobile, imageUrl });
     }
 
     await record.save();
     res.status(201).json(record);
   } catch (err) {
+    console.error('POST error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET applications by date
-router.get('/range', async (req, res) => {
-  const { start, end } = req.query;
-  if (!start || !end) return res.status(400).json({ error: 'Start and end dates are required' });
+// GET - fetch applications by date
+router.get('/', async (req, res) => {
+  const { date } = req.query;
+
+  if (!date) {
+    return res.status(400).json({ error: 'Date is required' });
+  }
 
   try {
-    const records = await ApplicationByDate.find({
-      date: { $gte: start, $lte: end }
-    });
+    const record = await ApplicationByDate.findOne({ date });
 
-    // Flatten all applications from different dates
-    const applications = records.flatMap(record => record.applications);
+    if (!record) {
+      return res.json(record ? record.applications : []);
+    }
 
-    res.json({ applications });
+    res.json(record.applications);
   } catch (err) {
-    console.error('Range fetch error:', err);
-    res.status(500).json({ error: err.message });
+    console.error('GET error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-// PUT update status of one application
+
 router.put('/:appId', async (req, res) => {
   const { appId } = req.params;
   const { status } = req.body;
@@ -72,7 +75,7 @@ router.put('/:appId', async (req, res) => {
     const updatedApp = doc.applications.find(app => app._id.toString() === appId);
     res.json(updatedApp);
   } catch (err) {
-    console.error('Update error:', err);
+    console.error('Update status error:', err);
     res.status(500).json({ error: 'Failed to update application status' });
   }
 });

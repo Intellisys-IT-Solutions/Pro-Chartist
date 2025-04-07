@@ -2,26 +2,32 @@ const express = require('express');
 const router = express.Router();
 const League = require('../models/League');
 
-// GET league data
+// ✅ GET league data
 router.get('/', async (req, res) => {
   try {
-    const data = await League.findOne();
-    res.json(data);
+    const league = await League.findOne(); // get latest document
+    if (!league) return res.status(404).json({ error: 'No league found' });
+    res.json(league);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ error: 'Failed to fetch league data' });
   }
 });
 
-// PUT league data (update or create if not exists)
+// ✅ PUT to update current league
 router.put('/', async (req, res) => {
   try {
-    let league = await League.findOne();
-    if (!league) league = new League();
-    league.currentLeague = req.body.currentLeague;
-    await league.save();
-    res.json(league);
+    const { currentLeague } = req.body;
+
+    const updatedLeague = await League.findOneAndUpdate(
+      {},
+      { currentLeague },
+      { new: true, upsert: true }
+    );
+
+    res.json(updatedLeague);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Update error:', err);
+    res.status(500).json({ error: 'Failed to update league data' });
   }
 });
 

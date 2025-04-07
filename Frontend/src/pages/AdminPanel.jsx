@@ -12,12 +12,12 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
   const [modifiedTraders, setModifiedTraders] = useState([]);
   const navigate = useNavigate();
 
-  // ✅ Fetch league data from MongoDB
   useEffect(() => {
     const fetchLeagueData = async () => {
       try {
         const res = await fetch('http://localhost:5002/api/league');
-        const data = await res.json();
+const data = await res.json();
+
         if (data) {
           setLeagueData(data);
           setModifiedTraders(data.currentLeague.traders);
@@ -30,7 +30,6 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
     fetchLeagueData();
   }, []);
 
-  // ✅ Fetch applications
   useEffect(() => {
     const fetchApplications = async () => {
       const selectedDate = leagueData?.currentLeague?.nextLeagueStart;
@@ -38,10 +37,7 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
   
       try {
         const res = await fetch(`http://localhost:5002/api/applicationsByDate?date=${selectedDate}`);
-        const result = await res.json();
-  
-        // ✅ Make sure to extract `applications` array
-        const data = result?.applications || [];
+        const data = await res.json(); // ⬅️ DIRECTLY use the array
   
         const pending = data.filter(app => app.status === 'pending');
         const approved = data.filter(app => app.status === 'approved');
@@ -78,7 +74,6 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
 
       const updatedApp = await res.json();
 
-      // Remove from all lists
       setApplications(prev => prev.filter(app => app._id !== appId));
       setAcceptedApplications(prev => prev.filter(app => app._id !== appId));
       setRejectedApplications(prev => prev.filter(app => app._id !== appId));
@@ -96,7 +91,6 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
 
   const handleLogout = () => navigate('/admin/login');
 
-  // ✅ Save league dates to DB and update local state
   const updateLeagueData = async (e) => {
     e.preventDefault();
     try {
@@ -105,21 +99,21 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentLeague: leagueData.currentLeague }),
       });
-
+  
       if (!res.ok) throw new Error('Failed to save league data');
-
+  
       const updated = await res.json();
       setLeagueData(updated);
       setModifiedTraders(updated.currentLeague.traders);
       localStorage.setItem("leagueData", JSON.stringify(updated));
-      toast.success('League data saved to MongoDB!');
+      toast.success('League data saved!');
     } catch (err) {
       console.error(err);
       toast.error('Failed to save league data');
     }
   };
+  
 
-  // ✅ Update individual trader
   const handleUpdateTrader = (rank, field, value) => {
     setModifiedTraders(
       modifiedTraders.map((trader) =>
@@ -128,13 +122,12 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
     );
   };
 
-  // ✅ Save traders to DB
   const handleSubmitTraders = async () => {
     const updatedLeague = {
       ...leagueData,
       currentLeague: {
         ...leagueData.currentLeague,
-        traders: modifiedTraders,
+        traders: modifiedTraders.slice(0, 3),
       },
     };
 
@@ -218,14 +211,13 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
           </form>
         </div>
 
-        {/* Applications Sections */}
         <div className="applications">
           <h2 className='h2'>Pending Applications of <p>{leagueData.currentLeague.nextLeagueStart}</p> league</h2>
           <table>
             <thead>
               <tr><th>Name</th><th>Mobile</th><th>Image</th><th>Status</th><th>Actions</th></tr>
             </thead>
-            <tbody>
+            <tbody className='applications-body'>
               {applications.map((app, index) => (
                 <tr key={app._id || index}>
                   <td>{app.name}</td>
@@ -233,10 +225,10 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
                   <td>
                     {app.imageUrl && (
                       <img
-                        src={`http://localhost:5002${app.imageUrl}`}
+                        src={`http://localhost:5002/${app.imageUrl}`}
                         alt="Trading Screenshot"
                         width="50"
-                        onClick={() => openImageModal(`http://localhost:5002${app.imageUrl}`)}
+                        onClick={() => openImageModal(`http://localhost:5002/${app.imageUrl}`)}
                         style={{ cursor: 'pointer' }}
                       />
                     )}
@@ -258,7 +250,7 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
             <thead>
               <tr><th>Name</th><th>Mobile</th><th>Image</th><th>Actions</th></tr>
             </thead>
-            <tbody>
+            <tbody className='accepted-applications-body'>
               {acceptedApplications.map((app, index) => (
                 <tr key={app._id || index}>
                   <td>{app.name}</td>
@@ -266,10 +258,10 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
                   <td>
                     {app.imageUrl && (
                       <img
-                        src={`http://localhost:5002${app.imageUrl}`}
+                        src={`http://localhost:5002/${app.imageUrl}`}
                         alt="Trading Screenshot"
                         width="50"
-                        onClick={() => openImageModal(`http://localhost:5002${app.imageUrl}`)}
+                        onClick={() => openImageModal(`http://localhost:5002/${app.imageUrl}`)}
                         style={{ cursor: 'pointer' }}
                       />
                     )}
@@ -290,7 +282,7 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
             <thead>
               <tr><th>Name</th><th>Mobile</th><th>Image</th><th>Actions</th></tr>
             </thead>
-            <tbody>
+            <tbody className='rejected-applications-body'>
               {rejectedApplications.map((app, index) => (
                 <tr key={app._id || index}>
                   <td>{app.name}</td>
@@ -298,10 +290,10 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
                   <td>
                     {app.imageUrl && (
                       <img
-                        src={`http://localhost:5002${app.imageUrl}`}
+                        src={`http://localhost:5002/${app.imageUrl}`}
                         alt="Trading Screenshot"
                         width="50"
-                        onClick={() => openImageModal(`http://localhost:5002${app.imageUrl}`)}
+                        onClick={() => openImageModal(`http://localhost:5002/${app.imageUrl}`)}
                         style={{ cursor: 'pointer' }}
                       />
                     )}
@@ -316,26 +308,25 @@ function AdminPanel({ leagueData, setLeagueData, applications, setApplications }
           </table>
         </div>
 
-        {/* Traders Table */}
         <div className="update-traders">
-          <h2>Update Top Traders</h2>
-          <table>
-            <thead>
-              <tr><th>Rank</th><th>Name</th><th>Trades</th><th>ROI</th></tr>
-            </thead>
-            <tbody className='traders-table-modified'>
-              {modifiedTraders.map((trader) => (
-                <tr key={trader.rank}>
-                  <td>{trader.rank}</td>
-                  <td><input type="text" value={trader.name} onChange={(e) => handleUpdateTrader(trader.rank, 'name', e.target.value)} /></td>
-                  <td><input type="number" value={trader.trades} onChange={(e) => handleUpdateTrader(trader.rank, 'trades', parseInt(e.target.value))} /></td>
-                  <td><input type="number" value={trader.roi} onChange={(e) => handleUpdateTrader(trader.rank, 'roi', parseFloat(e.target.value))} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button onClick={handleSubmitTraders} className="update-btn">Update Top Traders</button>
-        </div>
+  <h2>Update Top Traders</h2>
+  <table>
+    <thead>
+      <tr><th>Rank</th><th>Name</th><th>Trades</th><th>ROI</th></tr>
+    </thead>
+    <tbody className='traders-table-modified'>
+      {modifiedTraders.slice(0, 3).map((trader) => (
+        <tr key={trader.rank}>
+          <td>{trader.rank}</td>
+          <td><input type="text" value={trader.name} onChange={(e) => handleUpdateTrader(trader.rank, 'name', e.target.value)} /></td>
+          <td><input type="number" value={trader.trades} onChange={(e) => handleUpdateTrader(trader.rank, 'trades', parseInt(e.target.value))} /></td>
+          <td><input type="number" value={trader.roi} onChange={(e) => handleUpdateTrader(trader.rank, 'roi', parseFloat(e.target.value))} /></td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <button onClick={handleSubmitTraders} className="update-btn">Update Top Traders</button>
+</div>
       </div>
 
       {selectedImage && (
