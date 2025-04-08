@@ -22,15 +22,24 @@ const Admin = require('./models/Admin');
 const app = express();
 connectDB();
 
-// Middleware
+// ✅ CORS Middleware (dynamic origin or wildcard during dev)
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174'],
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow requests from localhost:* during development
+    if (!origin || origin.startsWith('http://localhost:')) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed from this origin'));
+    }
+  },
+  credentials: true,
 }));
+
+// Middleware
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Multer setup for image uploads
+// ✅ Multer setup for image uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/');
@@ -41,30 +50,34 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// Routes
+// ✅ Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/league', leagueRoutes);
 app.use('/api/users', authRoutes);
 app.use('/api', otpRoutes);
 app.use('/api/applicationsByDate', applicationsByDateRoutes);
 
-// Create a default admin if not exists
+// ✅ Create default admin if not exists
 const createDefaultAdmin = async () => {
-  const existing = await Admin.findOne({ email: 'admin@example.com' });
-  if (!existing) {
-    const hashed = await bcrypt.hash('Admin@123', 10);
-    await Admin.create({ email: 'admin@example.com', password: hashed, role: 'admin' });
-    console.log('Default admin created');
+  try {
+    const existing = await Admin.findOne({ email: 'admin@example.com' });
+    if (!existing) {
+      const hashed = await bcrypt.hash('Admin@123', 10);
+      await Admin.create({ email: 'admin@example.com', password: hashed, role: 'admin' });
+      console.log('✅ Default admin created');
+    }
+  } catch (err) {
+    console.error('❌ Error creating default admin:', err);
   }
 };
 
 createDefaultAdmin();
 
+// Root route
 app.get('/', (req, res) => {
-  res.send('API is working');
+  res.send('✅ API is working');
 });
 
-
-
+// Start server
 const PORT = process.env.PORT || 5002;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
