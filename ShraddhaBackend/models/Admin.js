@@ -1,7 +1,4 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-
-
 
 const adminSchema = new mongoose.Schema({
   email: {
@@ -18,10 +15,8 @@ const adminSchema = new mongoose.Schema({
     enum: ['admin', 'master-admin'],
     default: 'admin'
   },
-  resetPasswordToken: String,
-  resetPasswordExpires: Date
+  otpCode: String,
+  otpExpires: Date
 }, { timestamps: true });
-
-// ... existing pre-save hook for password hashing ...
 
 module.exports = mongoose.model('Admin', adminSchema);

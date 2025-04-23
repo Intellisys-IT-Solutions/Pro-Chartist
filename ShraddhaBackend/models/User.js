@@ -1,17 +1,17 @@
-// models/User.js
-
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  email: String,
-  password: String,
-  mobile: String,
+  email: { type: String, required: true, unique: true, lowercase: true },
+  password: { type: String, required: true },
+  mobile: { type: String },
+
+  // Reset password via token
   resetPasswordToken: String,
   resetPasswordExpires: Date,
-  otpCode: String,
-  otpExpires: Date,
 
-});
+  // Reset password via OTP
+  otpCode: String,
+  otpExpires: Date
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

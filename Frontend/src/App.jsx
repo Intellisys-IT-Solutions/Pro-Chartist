@@ -10,6 +10,8 @@ import Signup from './pages/Signup';
 import ProTraders from './pages/ProTraders';
 import AdminPanel from './pages/AdminPanel';
 import AdminLogin from './pages/AdminLogin';
+import ResetPassword from './pages/ResetPassword';
+import AdminResetPassword from './pages/AdminResetPassword';
 import './App.css';
 
 
@@ -67,6 +69,8 @@ function App() {
           <Route path="/learning" element={<Learning />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/admin/reset-password" element={<AdminResetPassword />} />
           <Route
             path="/pro-traders"
             element={

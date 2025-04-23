@@ -10,13 +10,7 @@ function AdminLogin({ setIsAdminAuthenticated }) {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-
   const [showAdminReset, setShowAdminReset] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetEmailError, setResetEmailError] = useState('');
-
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('');
   const [resetError, setResetError] = useState('');
@@ -39,7 +33,6 @@ function AdminLogin({ setIsAdminAuthenticated }) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Login failed');
 
-      // ✅ Success
       setIsAdminAuthenticated(true);
       localStorage.setItem('isAdminAuthenticated', 'true');
       localStorage.setItem('adminRole', data.role);
@@ -64,7 +57,7 @@ function AdminLogin({ setIsAdminAuthenticated }) {
     }
   };
 
-  // ✅ Admin Reset Handler
+  // ✅ Admin Reset
   const handleAdminReset = async (e) => {
     e.preventDefault();
     setResetError('');
@@ -95,36 +88,6 @@ function AdminLogin({ setIsAdminAuthenticated }) {
     }
   };
 
-  // ✅ Forgot Password Handler
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    setResetEmailError('');
-    setIsLoading(true);
-
-    try {
-      if (!resetEmail) throw new Error('Please enter your email');
-
-      const response = await fetch('http://localhost:5002/api/admin/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail })
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to send reset email');
-
-      toast.success('Reset link sent to your email!');
-      setShowForgotPassword(false);
-      setResetEmail('');
-    } catch (error) {
-      setResetEmailError(error.message);
-      toast.error(error.message || 'Failed to send reset email');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ✅ Login View
   const renderLoginForm = () => (
     <div className="login-card">
       <h2>Admin Login</h2>
@@ -163,7 +126,7 @@ function AdminLogin({ setIsAdminAuthenticated }) {
           <button type="button" onClick={() => setShowAdminReset(true)} className="reset-btn">
             Reset Admin
           </button>
-          <button type="button" onClick={() => setShowForgotPassword(true)} className="forgot-btn">
+          <button type="button" onClick={() => navigate('/admin/reset-password')} className="forgot-btn">
             Forgot Password?
           </button>
         </div>
@@ -171,40 +134,6 @@ function AdminLogin({ setIsAdminAuthenticated }) {
     </div>
   );
 
-  // ✅ Forgot Password View
-  const renderForgotPasswordForm = () => (
-    <div className="login-card">
-      <h2>Forgot Password</h2>
-      <form onSubmit={handleForgotPassword}>
-        <div className="form-group">
-          <label>Email</label>
-          <input
-            type="email"
-            value={resetEmail}
-            onChange={(e) => setResetEmail(e.target.value)}
-            className={resetEmailError ? 'error' : ''}
-          />
-          {resetEmailError && <span className="error-message">{resetEmailError}</span>}
-        </div>
-        <button type="submit" className="login-btn" disabled={isLoading}>
-          {isLoading ? 'Sending...' : 'Send Reset Link'}
-        </button>
-        <button
-          type="button"
-          className="back-btn"
-          onClick={() => {
-            setShowForgotPassword(false);
-            setResetEmail('');
-            setResetEmailError('');
-          }}
-        >
-          Back to Login
-        </button>
-      </form>
-    </div>
-  );
-
-  // ✅ Admin Reset Form View
   const renderAdminResetForm = () => (
     <div className="login-card">
       <h2>Reset Admin Credentials</h2>
@@ -250,11 +179,7 @@ function AdminLogin({ setIsAdminAuthenticated }) {
 
   return (
     <div className="admin-login">
-      {!showAdminReset && !showForgotPassword
-        ? renderLoginForm()
-        : showForgotPassword
-        ? renderForgotPasswordForm()
-        : renderAdminResetForm()}
+      {showAdminReset ? renderAdminResetForm() : renderLoginForm()}
     </div>
   );
 }
